@@ -28,6 +28,29 @@ app.add_middleware(
 # load all models once on startup
 M = load_all_models()
 
+# ── Override sample input with complete hardcoded values ──────────
+M['sample_input'] = {
+    'PAY_0':          0,
+    'PAY_2':          0,
+    'PAY_3':          0,
+    'PAY_4':          0,
+    'PAY_5':          0,
+    'PAY_6':          0,
+    'high_risk':      0,
+    'months_delayed': 1,
+    'max_pay_delay':  1,
+    'avg_pay_delay':  0.3,
+    'pay_trend':      0,
+    'LIMIT_BAL':      200000.0,
+    'credit_util':    0.45,
+    'payment_ratio':  0.75,
+    'avg_bill_amt':   85000.0,
+    'avg_pay_amt':    65000.0,
+    'bill_trend':     -2000.0,
+    'limit_per_age':  5000.0,
+    'business_age_months': 12,
+}
+
 # ── Helpers ───────────────────────────────────────────────────────
 def prob_to_score(prob: float) -> int:
     return int(round(300 + (1 - prob) * 550))
@@ -81,7 +104,7 @@ class ForecastRequest(BaseModel):
 @app.get("/")
 def root():
     return {
-        "message": "LendraAI API is live 🚀",
+        "message": "LendraAI API is live ",
         "version": "1.0.0",
         "endpoints": [
             "POST /api/credit-score",
@@ -121,7 +144,12 @@ async def credit_score(req: CreditRequest):
     confidence = "high" if months >= 12 else "medium" if months >= 6 else "low"
 
     # SHAP
-    shap_vals = M['shap_explainer'].shap_values(input_df)[0]
+    raw_shap = M['shap_explainer'].shap_values(input_df)
+    # TreeExplainer for binary classifiers returns [array_class0, array_class1]
+    if isinstance(raw_shap, list):
+        shap_vals = np.array(raw_shap[0]).flatten()
+    else:
+        shap_vals = np.array(raw_shap).flatten()
     shap_df   = pd.DataFrame({
         'feature':    M['feature_list'],
         'shap_value': shap_vals
@@ -221,9 +249,9 @@ def cash_flow_forecast(req: ForecastRequest):
         "tax_estimate":        tax_estimate,
         "avg_monthly_revenue": int(avg_rev),
         "message": (
-            "⚠️ Cash flow dip predicted — start saving now"
+            " Cash flow dip predicted — start saving now"
             if risk_flag else
-            "✅ Cash flow looks stable for the next 6 months"
+            " Cash flow looks stable for the next 6 months"
         )
     }
 

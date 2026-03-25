@@ -18,7 +18,10 @@ class DummyCreditModel:
 
 class DummyShap:
     def shap_values(self, X):
-        return [[[0.0]*15]]
+        import numpy as np
+        n = X.shape[1] if hasattr(X, 'shape') else 18
+        # Return list of arrays per class, each (n_samples, n_features)
+        return [np.zeros((1, n)), np.zeros((1, n))]
 
 def load_all_models():
     models = {}
