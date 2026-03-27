@@ -25,31 +25,52 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# load all models once on startup
-M = load_all_models()
-
-# ── Override sample input with complete hardcoded values ──────────
-M['sample_input'] = {
-    'PAY_0':          0,
-    'PAY_2':          0,
-    'PAY_3':          0,
-    'PAY_4':          0,
-    'PAY_5':          0,
-    'PAY_6':          0,
-    'high_risk':      0,
-    'months_delayed': 1,
-    'max_pay_delay':  1,
-    'avg_pay_delay':  0.3,
-    'pay_trend':      0,
-    'LIMIT_BAL':      200000.0,
-    'credit_util':    0.45,
-    'payment_ratio':  0.75,
-    'avg_bill_amt':   85000.0,
-    'avg_pay_amt':    65000.0,
-    'bill_trend':     -2000.0,
-    'limit_per_age':  5000.0,
-    'business_age_months': 12,
+# load all models once on startup (deferred)
+M = {
+    'credit_model': None,
+    'shap_explainer': None,
+    'feature_list': [],
+    'lstm_model': None,
+    'seq_scaler': None,
+    'static_scaler': None,
+    'static_cols': [],
+    'sample_input': {}
 }
+
+@app.on_event("startup")
+async def startup_event():
+    # We do a fast startup and load models in background or on first request
+    # To keep Render happy, we don't block here
+    print("API is starting up... models will be loaded on demand.")
+
+def get_models():
+    global M
+    if M.get('credit_model') is None:
+        print("Loading models on first request...")
+        M.update(load_all_models())
+        # ── Override sample input with complete hardcoded values ──────────
+        M['sample_input'] = {
+            'PAY_0':          0,
+            'PAY_2':          0,
+            'PAY_3':          0,
+            'PAY_4':          0,
+            'PAY_5':          0,
+            'PAY_6':          0,
+            'high_risk':      0,
+            'months_delayed': 1,
+            'max_pay_delay':  1,
+            'avg_pay_delay':  0.3,
+            'pay_trend':      0,
+            'LIMIT_BAL':      200000.0,
+            'credit_util':    0.45,
+            'payment_ratio':  0.75,
+            'avg_bill_amt':   85000.0,
+            'avg_pay_amt':    65000.0,
+            'bill_trend':     -2000.0,
+            'limit_per_age':  5000.0,
+            'business_age_months': 12,
+        }
+    return M
 
 # ── Helpers ───────────────────────────────────────────────────────
 def prob_to_score(prob: float) -> int:
@@ -128,6 +149,7 @@ def health():
 # ── 1. Credit Score ───────────────────────────────────────────────
 @app.post("/api/credit-score")
 async def credit_score(req: CreditRequest):
+    M = get_models()
     print(f"Incoming Credit Score request for business_id: {req.business_id}")
     # try Interswitch API first, fall back to provided/sample features
     if req.merchant_code:
@@ -193,6 +215,7 @@ async def credit_score(req: CreditRequest):
 # ── 2. Score Simulator ────────────────────────────────────────────
 @app.post("/api/simulate-score")
 def simulate_score(req: SimulateRequest):
+    M = get_models()
     base = req.features if req.features else M['sample_input'].copy()
 
     # base score
@@ -227,6 +250,7 @@ def simulate_score(req: SimulateRequest):
 # ── 3. Cash Flow Forecast ─────────────────────────────────────────
 @app.post("/api/cash-flow-forecast")
 def cash_flow_forecast(req: ForecastRequest):
+    M = get_models()
     # build sequence (6 x 5)
     seq = np.array([[
         req.monthly_revenue[i],
@@ -276,6 +300,7 @@ def cash_flow_forecast(req: ForecastRequest):
 # ── 4. Loan Pre-Approval Engine  ──────────────────────────────────
 @app.post("/api/loan-preapproval")
 def loan_preapproval(req: CreditRequest):
+    M = get_models()
     # get credit score first
     features = req.features if req.features else M['sample_input']
     input_df = pd.DataFrame([features])[M['feature_list']]
