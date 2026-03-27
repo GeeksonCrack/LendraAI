@@ -23,17 +23,22 @@ const CashFlow = () => {
 
   const runForecast = async () => {
     setLoading(true);
-    const result = await fetchCashFlowForecast("NG-SME-001", inputs);
-    
-    // Transform forecast array to Recharts friendly format
-    const chartData = result.forecast_6months.map((val, index) => ({
-      name: `Month ${index + 1}`,
-      revenue: val,
-      isRiskMonth: result.risk_flag && result.risk_month === `month_${index + 1}`
-    }));
+    try {
+      const result = await fetchCashFlowForecast("NG-SME-001", inputs);
+      
+      // Transform forecast array to Recharts friendly format
+      const newChartData = result.forecast_6months.map((val, index) => ({
+        name: `Month ${index + 1}`,
+        revenue: val,
+        isRiskMonth: result.risk_flag && result.risk_month === `month_${index + 1}`
+      }));
 
-    setData({ ...result, chartData });
-    setLoading(false);
+      setData({ ...result, chartData: newChartData });
+    } catch (error) {
+      console.error("Forecast failed", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => {

@@ -184,9 +184,9 @@ const LoanEngine = () => {
       </div>
 
       {!approved && (
-          <Card className="p-8 border-border bg-secondary flex flex-col items-center justify-center text-center space-y-4">
-             <h2 className="text-xl font-bold text-text-primary">Score Too Low</h2>
-             <p className="text-text-secondary max-w-md">
+          <Card className="p-8 border-border bg-muted/30 flex flex-col items-center justify-center text-center space-y-4">
+             <h2 className="text-xl font-bold text-foreground">Score Too Low</h2>
+             <p className="text-muted-foreground max-w-md">
                Based on your current LendraAI Score ({creditData?.score}), primary financing is unavailable.
              </p>
           </Card>
@@ -194,20 +194,20 @@ const LoanEngine = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pb-8">
          {/* SHAP Insights */}
-         <Card className="p-6 border-border bg-secondary flex flex-col">
-            <h3 className="font-semibold flex items-center text-text-primary mb-4">
-               <TrendingUp className="w-5 h-5 mr-2 text-primary-accent" />
+         <Card className="p-6 border-border bg-muted/30 flex flex-col">
+            <h3 className="font-semibold flex items-center text-foreground mb-4">
+               <TrendingUp className="w-5 h-5 mr-2 text-primary" />
                What influenced your decision
             </h3>
             <ul className="space-y-3 flex-1">
                {creditData?.top_factors?.map((factor, i) => (
-                 <li key={i} className="flex items-start text-sm text-text-secondary">
-                    <span className="text-primary-accent mr-2 mt-0.5">•</span>
+                 <li key={i} className="flex items-start text-sm text-muted-foreground">
+                    <span className="text-primary mr-2 mt-0.5">•</span>
                     <span className="capitalize">{factor.replace(/_/g, ' ')} metrics tracking positively against sector benchmarks.</span>
                  </li>
                ))}
                {!approved && creditData?.improvement_tips?.map((tip, i) => (
-                 <li key={i+10} className="flex items-start text-sm text-red-400">
+                 <li key={i+10} className="flex items-start text-sm text-red-500">
                     <span className="mr-2 mt-0.5">-</span>
                     {tip}
                  </li>
@@ -216,18 +216,18 @@ const LoanEngine = () => {
          </Card>
 
          {/* Export Action */}
-         <Card className="p-6 border-border bg-secondary flex flex-col items-center justify-center text-center space-y-4">
-            <h3 className="font-semibold text-text-primary">Official Financial Report</h3>
-            <p className="text-sm text-text-secondary max-w-xs">
+         <Card className="p-6 border-border bg-foreground text-background flex flex-col items-center justify-center text-center space-y-4 shadow-xl">
+            <h3 className="font-bold text-xl tracking-tight">Official Financial Report</h3>
+            <p className="text-sm opacity-80 max-w-xs font-medium">
                Generate a certified PDF containing your credit profile, cash flow forecast, and eligibility for your investors.
             </p>
             <button 
                onClick={handleExport}
                disabled={isExporting}
-               className="mt-2 w-full md:w-auto px-6 py-3 bg-primary-accent hover:bg-primary-accent/90 text-white font-semibold rounded-lg shadow-lg shadow-primary-accent/20 transition-all flex items-center justify-center disabled:opacity-50"
+               className="mt-2 w-full md:w-auto px-8 py-4 bg-background text-foreground font-bold rounded-xl shadow-lg transition-all flex items-center justify-center hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
             >
                {isExporting ? (
-                 <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin mr-2" />
+                 <div className="w-5 h-5 rounded-full border-2 border-foreground border-t-transparent animate-spin mr-2" />
                ) : (
                  <Download className="w-5 h-5 mr-2" />
                )}

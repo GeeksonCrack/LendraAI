@@ -6,13 +6,14 @@ export const generateFinancialReport = async (creditData, loanData, customAmt = 
   try {
     const doc = new jsPDF();
     
-    // Default brand colors
-    const primaryColor = [29, 158, 117]; 
-    const darkColor = [15, 23, 42]; 
-    const textColor = [50, 50, 50];
+    // Default brand colors (Refined for concentrated theme)
+    const primaryColor = [10, 10, 10]; // Concentrated Primary (Black)
+    const accentColor = [115, 115, 115]; // Neutral Gray
+    const textColor = [40, 40, 40];
+    const riskColor = [239, 68, 68]; // Red
 
     // --- Header ---
-    doc.setFillColor(...darkColor);
+    doc.setFillColor(...primaryColor);
     doc.rect(0, 0, 210, 40, 'F');
     
     doc.setTextColor(255, 255, 255);
@@ -26,10 +27,10 @@ export const generateFinancialReport = async (creditData, loanData, customAmt = 
     doc.text(`Generated: ${dateStr}`, 140, 26);
 
     // --- SME Details ---
-    doc.setTextColor(...darkColor);
+    doc.setTextColor(...primaryColor);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text("Financial Intelligence Report", 20, 55);
+    doc.text("Certified Financial Intelligence Report", 20, 55);
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
@@ -37,75 +38,91 @@ export const generateFinancialReport = async (creditData, loanData, customAmt = 
     doc.text("Business Name: Mama Tunde Store", 20, 65);
     doc.text("Category: Retail", 20, 72);
     if(creditData) {
-        doc.text(`Business ID: ${creditData.business_id}`, 20, 79);
+        doc.text(`Business ID: ${creditData.business_id || "NG-SME-001"}`, 20, 79);
     }
 
     // --- AI Credit Profile ---
-    doc.setDrawColor(200, 200, 200);
+    doc.setDrawColor(230, 230, 230);
     doc.line(20, 85, 190, 85);
     
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.setTextColor(...darkColor);
+    doc.setTextColor(...primaryColor);
     doc.text("1. LendraAI Credit Profile", 20, 95);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     doc.setTextColor(...textColor);
     if(creditData) {
+        doc.setFont("helvetica", "bold");
         doc.text(`Credit Score: ${creditData.score} / 850`, 20, 105);
-        doc.text(`Risk Assessment: ${creditData.risk_level.toUpperCase()}`, 20, 112);
+        
+        doc.setFont("helvetica", "normal");
+        const riskLevel = (creditData.risk_level || "low").toUpperCase();
+        doc.text(`Risk Assessment: `, 20, 112);
+        
+        if (riskLevel === 'LOW') doc.setTextColor(16, 185, 129);
+        else if (riskLevel === 'MEDIUM') doc.setTextColor(245, 158, 11);
+        else doc.setTextColor(239, 68, 68);
         
         doc.setFont("helvetica", "bold");
-        doc.text("Top Influencing Factors (SHAP):", 20, 122);
+        doc.text(riskLevel, 55, 112);
+        
+        doc.setTextColor(...textColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("Top Influencing Factors:", 20, 122);
         doc.setFont("helvetica", "normal");
         if(creditData.top_factors && Array.isArray(creditData.top_factors)) {
             creditData.top_factors.forEach((factor, i) => {
                 const cleanName = factor.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                doc.text(`• ${cleanName}`, 25, 130 + (i * 7));
+                doc.text(`• ${cleanName} metrics tracking against sector benchmarks`, 25, 130 + (i * 7));
             });
         }
     }
 
-    // --- Loan Pre-Approval ---
+    // --- Loan Eligibility ---
+    doc.setTextColor(...primaryColor);
+    doc.setDrawColor(230, 230, 230);
     doc.line(20, 155, 190, 155);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.setTextColor(...darkColor);
-    doc.text("2. Instant Credit Decision", 20, 165);
+    doc.text("2. SME Growth Financing Eligibility", 20, 165);
 
     doc.setFont("helvetica", "normal");
     doc.setFontSize(11);
     
     if (loanData && loanData.approved) {
-        doc.setTextColor(...primaryColor);
+        doc.setTextColor(16, 185, 129);
         doc.setFont("helvetica", "bold");
         
-        // Show configured limits if available
         const printAmt = customAmt > 0 ? customAmt : loanData.max_loan_amount;
         const printTerm = customTerm > 0 ? customTerm : loanData.tenure_months;
         const printEmi = customEmi > 0 ? customEmi : loanData.monthly_payment;
         
-        doc.text(`PRE-APPROVED: NGN ${printAmt.toLocaleString()}`, 20, 175);
+        doc.text(`STATUS: PRE-APPROVED`, 20, 175);
+        doc.setTextColor(...textColor);
+        doc.text(`Max Eligibility: NGN ${loanData.max_loan_amount.toLocaleString()}`, 20, 183);
         
+        if (customAmt > 0) {
+            doc.setFont("helvetica", "italic");
+            doc.text(`Configuration: NGN ${printAmt.toLocaleString()} over ${printTerm} months`, 20, 190);
+            doc.text(`Estimated Repayment: NGN ${printEmi.toLocaleString()} / month`, 20, 197);
+        }
+    } else {
+        doc.setTextColor(...riskColor);
+        doc.setFont("helvetica", "bold");
+        doc.text("STATUS: PRIMARY FINANCING UNAVAILABLE", 20, 175);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(...textColor);
-        doc.text(`Interest Rate: ${loanData.interest_rate}% p.a.`, 20, 183);
-        doc.text(`Repayment Tenure: ${printTerm} Months`, 20, 190);
-        doc.text(`Estimated EMI: NGN ${printEmi.toLocaleString()} / month`, 20, 197);
-    } else {
-        doc.setTextColor(220, 38, 38);
-        doc.text("STATUS: Not Approved for Primary Financing", 20, 175);
-        doc.setTextColor(...textColor);
-        doc.text(`Reason: ${loanData?.decision || 'Reviewing Profile'}`, 20, 183);
+        doc.text(`Reason: ${loanData?.decision || 'Credit profile requires further seasoning.'}`, 20, 183);
     }
 
     // --- 6 Month Cash Flow Forecast ---
+    doc.setTextColor(...primaryColor);
     doc.line(20, 210, 190, 210);
     doc.setFont("helvetica", "bold");
     doc.setFontSize(14);
-    doc.setTextColor(...darkColor);
-    doc.text("3. Cash Flow Forecast (Next 6 Months)", 20, 220);
+    doc.text("3. AI-Driven Cash Flow Forecast", 20, 220);
 
     const forecast = await fetchCashFlowForecast("NG-SME-001", {
         monthly_revenue: [500000, 480000, 520000, 490000, 510000, 530000],
@@ -124,7 +141,7 @@ export const generateFinancialReport = async (creditData, loanData, customAmt = 
 
         autoTable(doc, {
             startY: 228,
-            head: [['Timeline', 'Predicted Revenue', 'AI Confidence']],
+            head: [['Timeline', 'Predicted Revenue', 'AI Status']],
             body: tableData,
             theme: 'striped',
             headStyles: { fillColor: primaryColor },
