@@ -1,59 +1,81 @@
 # LendraAI 
 
-> Intelligent financial layer for African SMEs — powered by Interswitch APIs.
+> Intelligent financial layer for African SMEs — powered by Interswitch APIs. 
 
 Built for the **Interswitch × Enyata Buildathon 2025**.
 
 ---
 
-## What is LendraAI?
+## What is LendraAI? 
 
-LendraAI is an AI-powered financial platform that gives African SMEs
-access to three things they currently lack:
+LendraAI is a high-fidelity, AI-powered financial platform designed to provide African SMEs with the tools they need to scale. We leverage alternative transaction data to bridge the credit gap.
 
-- **Credit scoring** — real-time creditworthiness from transaction history
-- **Cash flow forecasting** — predict revenue dips before they happen  
-- **Tax alerts** — know your liability before it's too late
-
-Built on Interswitch's Payment and Identity APIs, with explainable AI
-(SHAP) so every score comes with a reason — not just a number.
+- **ML Credit Scoring** — Real-time risk assessment using XGBoost & SHAP explainability.
+- **Predictive Cash Flow** — 6-month revenue forecasting powered by LSTM neural networks.
+- **Loan Pre-Approval** — Instant eligibility checks based on intelligent financial profiles.
+- **AI Financial Advisor** — Tailored SME growth strategies powered by Llama 3 & Groq.
 
 ---
 
-## Team
+## Team (The Architects)
 
-| Role | Responsibility |
-|------|---------------|
-| agoro oluwatimilehin | Credit scoring model (XGBoost + SHAP) + interactive dashboard | 
-| david akhabue | Cash flow forecasting (LSTM) |
-| lucid ohine | Backend API |
+| Name | Alias | Role | Responsibility |
+|------|-------|------|----------------|
+| **Agoro Oluwatimilehin** | Drizzy | ML Engineer | Credit Model (XGBoost + SHAP) & Interactive Dashboard UI |
+| **Ohine Ivori** | Lucid | Backend Engineer | Robust API Infrastructure & Interswitch Integration |
+| **David Akuabue** | Code | ML Engineer | Cash Flow Forecasting Model (LSTM) |
 
 ---
 
-## Repo structure
+## Tech Stack
 
-```
-lendraai-platform/
-├── backend/          # FastAPI — SE owns this
-├── ml_credit/        # XGBoost credit model — ML Eng 1
-├── ml_forecasting/   # LSTM forecasting — ML Eng 2
-├── frontend/         # Dashboard UI — SE owns this
-├── docs/             # API contracts, decisions log
+- **Machine Learning:** Python, XGBoost, SHAP, TensorFlow (LSTM), Scikit-learn
+- **Backend:** FastAPI, Python, Uvicorn
+- **Frontend:** React (Vite), Tailwind CSS (v4), Lucide Icons, Recharts
+- **LLM:** Groq (Llama 3.1) for AI Advisor
+- **APIs:** Interswitch Payment & Identity APIs
+- **Deployment:** Render (Backend), Vercel (Frontend)
+
+---
+
+## Project Structure
+
+```text
+LendraAI/
+├── backend/            # FastAPI - Central API Layer
+├── frontend/           # React + Vite - Concentrated Dark Dashboard
+├── ml_credit/          # XGBoost Model & SHAP Explainer
+├── ml_forecasting/     # LSTM Forecasting Model & Scalers
+├── docs/               # Technical Documentation & Reports
 └── README.md
 ```
 
 ---
 
-## Status
+## Quick Start
 
->  Building starts **March 20, 2025**. Repo is being organised pre-hackathon.
+### Backend (FastAPI)
+```bash
+cd backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+### Frontend (React)
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
-## Tech stack
+## Deployment Status
 
-- **ML:** Python, XGBoost, SHAP, LSTM (PyTorch/Keras)
-- **Backend:** FastAPI, Python
-- **Frontend:** React or Next.js
-- **Deploy:** Render / Railway
-- **APIs:** Interswitch Payment API, Interswitch Identity API
+- **Backend:** Live on Render ([https://lendraai.onrender.com](https://lendraai.onrender.com))
+- **Frontend:** Live on Vercel
+- **Repository:** [https://github.com/GeeksonCrack/LendraAI.git](https://github.com/GeeksonCrack/LendraAI.git)
+
+---
+
+> © 2025 LendraAI. Empowering Smarter Lending with Intelligent Data.
