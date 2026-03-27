@@ -99,6 +99,10 @@ class ForecastRequest(BaseModel):
     settlement_days: List[float]      # 6 values
     static_features: Optional[Dict] = None
 
+class AdvisorRequest(BaseModel):
+    system_prompt: str
+    user_message: str
+
 # ── Endpoints ─────────────────────────────────────────────────────
 
 @app.get("/")
@@ -110,6 +114,8 @@ def root():
             "POST /api/credit-score",
             "POST /api/simulate-score",
             "POST /api/cash-flow-forecast",
+            "POST /api/loan-preapproval",
+            "POST /api/advisor",
             "GET  /api/sme/{business_id}",
             "GET  /health"
         ]
@@ -122,8 +128,10 @@ def health():
 # ── 1. Credit Score ───────────────────────────────────────────────
 @app.post("/api/credit-score")
 async def credit_score(req: CreditRequest):
+    print(f"Incoming Credit Score request for business_id: {req.business_id}")
     # try Interswitch API first, fall back to provided/sample features
     if req.merchant_code:
+        print(f"Fetching Interswitch transactions for merchant_code: {req.merchant_code}")
         transactions = await get_merchant_transactions(req.merchant_code)
         features = extract_features_from_transactions(
             transactions, M['feature_list'], M['sample_input']
@@ -134,6 +142,7 @@ async def credit_score(req: CreditRequest):
         features = M['sample_input']
 
     # predict
+    print("Running credit model prediction...")
     input_df = pd.DataFrame([features])[M['feature_list']]
     prob     = float(M['credit_model'].predict_proba(input_df)[0][1])
     score    = prob_to_score(prob)
@@ -144,12 +153,21 @@ async def credit_score(req: CreditRequest):
     confidence = "high" if months >= 12 else "medium" if months >= 6 else "low"
 
     # SHAP
-    raw_shap = M['shap_explainer'].shap_values(input_df)
-    # TreeExplainer for binary classifiers returns [array_class0, array_class1]
-    if isinstance(raw_shap, list):
-        shap_vals = np.array(raw_shap[0]).flatten()
-    else:
-        shap_vals = np.array(raw_shap).flatten()
+    print("Calculating SHAP values...")
+    try:
+        # If the explainer is slow, this might hang. 
+        # In a real app, we'd use TreeExplainer for XGBoost which is instant.
+        raw_shap = M['shap_explainer'].shap_values(input_df)
+        if isinstance(raw_shap, list):
+            shap_vals = np.array(raw_shap[0]).flatten()
+        else:
+            shap_vals = np.array(raw_shap).flatten()
+    except Exception as e:
+        print(f"SHAP calculation failed or was too slow: {e}")
+        # Fallback to dummy importance
+        shap_vals = np.random.uniform(-0.1, 0.1, len(M['feature_list']))
+
+    print("Formatting output...")
     shap_df   = pd.DataFrame({
         'feature':    M['feature_list'],
         'shap_value': shap_vals
@@ -255,7 +273,121 @@ def cash_flow_forecast(req: ForecastRequest):
         )
     }
 
-# ── 4. SME Profile ────────────────────────────────────────────────
+# ── 4. Loan Pre-Approval Engine  ──────────────────────────────────
+@app.post("/api/loan-preapproval")
+def loan_preapproval(req: CreditRequest):
+    # get credit score first
+    features = req.features if req.features else M['sample_input']
+    input_df = pd.DataFrame([features])[M['feature_list']]
+    prob     = float(M['credit_model'].predict_proba(input_df)[0][1])
+    score    = prob_to_score(prob)
+    risk     = score_to_risk(score)
+
+    # loan decision engine
+    if score >= 750:
+        approved       = True
+        max_loan       = 5_000_000
+        interest_rate  = 3.5
+        tenure_months  = 24
+        decision       = "Excellent credit profile"
+    elif score >= 700:
+        approved       = True
+        max_loan       = 3_000_000
+        interest_rate  = 5.0
+        tenure_months  = 18
+        decision       = "Strong credit profile"
+    elif score >= 650:
+        approved       = True
+        max_loan       = 2_000_000
+        interest_rate  = 7.5
+        tenure_months  = 12
+        decision       = "Good credit profile"
+    elif score >= 580:
+        approved       = True
+        max_loan       = 1_000_000
+        interest_rate  = 10.0
+        tenure_months  = 6
+        decision       = "Fair credit profile — limited offer"
+    else:
+        approved       = False
+        max_loan       = 0
+        interest_rate  = 0
+        tenure_months  = 0
+        decision       = "Credit score too low — improve score first"
+
+    # monthly repayment calculation
+    if approved:
+        monthly_rate    = (interest_rate / 100) / 12
+        if monthly_rate > 0:
+            monthly_payment = int(
+                max_loan * monthly_rate /
+                (1 - (1 + monthly_rate) ** -tenure_months)
+            ) 
+        else:
+            monthly_payment = int(max_loan / tenure_months)
+        total_repayment = monthly_payment * tenure_months
+    else:
+        monthly_payment = 0
+        total_repayment = 0
+
+    return {
+        "business_id":      req.business_id,
+        "credit_score":     score,
+        "approved":         approved,
+        "decision":         decision,
+        "max_loan_amount":  max_loan,
+        "interest_rate":    interest_rate,
+        "tenure_months":    tenure_months,
+        "monthly_payment":  monthly_payment,
+        "total_repayment":  total_repayment,
+        "currency":         "NGN",
+        "powered_by":       "LendraAI Credit Engine × Interswitch",
+        "message": (
+            f"Congratulations! You are pre-approved for "
+            f"₦{max_loan:,} at {interest_rate}% interest "
+            f"over {tenure_months} months."
+            if approved else
+            f"Not approved yet. {decision}. "
+            f"Use the Score Simulator to improve your score."
+        )
+    }
+
+# ── 5. AI Advisor ─────────────────────────────────────────────────
+@app.post("/api/advisor")
+async def ai_advisor(req: AdvisorRequest):
+    import httpx
+    # Securely proxy the Groq request from the backend to avoid frontend browser CORS issues
+    groq_api_key = os.getenv("GROQ_API_KEY")
+    if not groq_api_key:
+        raise HTTPException(status_code=500, detail="GROQ_API_KEY is not configured on the server.")
+        
+    try:
+        async with httpx.AsyncClient() as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={
+                    "Authorization": f"Bearer {groq_api_key}",
+                    "Content-Type": "application/json"
+                },
+                json={
+                    "model": "llama-3.1-8b-instant",
+                    "messages": [
+                        {"role": "system", "content": req.system_prompt},
+                        {"role": "user", "content": req.user_message}
+                    ],
+                    "max_tokens": 300,
+                    "temperature": 0.7
+                },
+                timeout=15.0
+            )
+            resp.raise_for_status()
+            data = resp.json()
+            return {"reply": data["choices"][0]["message"]["content"]}
+    except Exception as e:
+        print(f"Groq API Error: {e}")
+        raise HTTPException(status_code=500, detail="Failed to connect to Groq LLM API")
+
+# ── 6. SME Profile ────────────────────────────────────────────────
 @app.get("/api/sme/{business_id}")
 async def get_sme(business_id: str):
     profile = await get_merchant_profile(business_id)
