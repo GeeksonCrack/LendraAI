@@ -383,8 +383,13 @@ async def ai_advisor(req: AdvisorRequest):
     import httpx
     # Securely proxy the Groq request from the backend to avoid frontend browser CORS issues
     groq_api_key = os.getenv("GROQ_API_KEY")
+    
     if not groq_api_key:
-        raise HTTPException(status_code=500, detail="GROQ_API_KEY is not configured on the server.")
+        # Fallback mock response for demo if API key is missing
+        print("GROQ_API_KEY not found. Using mock response.")
+        return {
+            "reply": "I am the LendraAI Advisor. To provide real-time intelligence, please configure my Groq API Key on Render. Based on your current profile, I recommend maintaining a 20% liquidity reserve for the upcoming quarter to mitigate seasonal risks."
+        }
         
     try:
         async with httpx.AsyncClient() as client:

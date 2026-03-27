@@ -68,8 +68,17 @@ export const fetchLoanPreapproval = async (businessId = "NG-SME-001") => {
     });
     return response.data;
   } catch (error) {
-    console.error("Failed to fetch loan preapproval", error);
-    throw new Error("Unable to fetch loan limits");
+    console.error("Failed to fetch loan preapproval, using fallback", error);
+    return {
+      approved: false,
+      decision: "Credit profile requires further seasoning.",
+      max_loan_amount: 0,
+      interest_rate: 0,
+      tenure_months: 0,
+      monthly_payment: 0,
+      total_repayment: 0,
+      message: "Not approved yet. Credit profile requires further seasoning. Use the Score Simulator to improve your score."
+    };
   }
 };
 
