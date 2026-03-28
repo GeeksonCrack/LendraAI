@@ -3,7 +3,7 @@ import { Card, CardHeader, CardContent } from '../components/ui/Card';
 import { LoadingSpinner } from '../components/ui/LoadingSpinner';
 import { fetchCashFlowForecast } from '../lib/api';
 import { formatNaira } from '../lib/utils';
-import { AlertCircle, CheckCircle2, TrendingDown, TrendingUp } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Sparkles, TrendingDown, TrendingUp } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell
 } from 'recharts';
@@ -61,7 +61,7 @@ const CashFlow = () => {
     );
   }
 
-  const { risk_flag, risk_month, tax_estimate, avg_monthly_revenue, chartData } = data;
+  const { risk_flag, risk_month, tax_estimate, avg_monthly_revenue, chartData, ai_analysis } = data;
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
@@ -175,9 +175,17 @@ const CashFlow = () => {
                   ))}
                </div>
 
-               <div className="bg-muted/50 text-[10px] text-muted-foreground p-3 rounded-lg border border-border italic leading-relaxed">
-                  "USSD peaks typically occur between months 3-5. Ensure buffers are optimized."
-               </div>
+               <Card className="p-4 bg-muted/20 border-border border-dashed">
+                  <h4 className="text-[10px] font-bold text-foreground uppercase tracking-widest mb-3">AI Analysis</h4>
+                  <div className="space-y-2">
+                    {ai_analysis?.map((item, i) => (
+                      <p key={i} className="text-[10px] text-muted-foreground font-medium leading-relaxed italic flex items-start gap-2">
+                        <Sparkles className="w-3 h-3 text-primary shrink-0 mt-0.5" />
+                        "{item}"
+                      </p>
+                    ))}
+                  </div>
+               </Card>
 
                <button 
                   onClick={runForecast}
