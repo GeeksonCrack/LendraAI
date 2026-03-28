@@ -1,7 +1,6 @@
 # backend/model_loader.py
 import joblib
 import os
-from tensorflow.keras.models import load_model
 
 BASE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(BASE, '..')
@@ -24,6 +23,11 @@ class DummyShap:
         return [np.zeros((1, n)), np.zeros((1, n))]
 
 def load_all_models():
+    # Deferred heavy imports to speed up startup and save memory
+    print("Loading heavy ML libraries (TensorFlow)...")
+    from tensorflow.keras.models import load_model
+    import numpy as np
+    
     models = {}
 
     dummy_features = [

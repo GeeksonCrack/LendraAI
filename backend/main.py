@@ -7,7 +7,6 @@ import numpy as np
 import pandas as pd
 import os
 
-from model_loader import load_all_models
 from interswitch import (
     get_merchant_transactions,
     get_merchant_profile,
@@ -37,16 +36,16 @@ M = {
     'sample_input': {}
 }
 
-@app.on_event("startup")
-async def startup_event():
-    # We do a fast startup and load models in background or on first request
-    # To keep Render happy, we don't block here
-    print("API is starting up... models will be loaded on demand.")
+@app.get("/health")
+def health():
+    # Very fast health check for Render
+    return {"status": "healthy", "models_loaded": M.get('credit_model') is not None}
 
 def get_models():
     global M
     if M.get('credit_model') is None:
-        print("Loading models on first request...")
+        print("Loading models on demand (first request)...")
+        from model_loader import load_all_models
         M.update(load_all_models())
         # ── Override sample input with complete hardcoded values ──────────
         M['sample_input'] = {
@@ -141,10 +140,6 @@ def root():
             "GET  /health"
         ]
     }
-
-@app.get("/health")
-def health():
-    return {"status": "healthy", "models_loaded": True}
 
 # ── 1. Credit Score ───────────────────────────────────────────────
 @app.post("/api/credit-score")
