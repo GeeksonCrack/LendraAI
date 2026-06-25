@@ -25,7 +25,7 @@ Built on Interswitch's Payment and Identity APIs, with explainable AI
 | Role | Responsibility |
 |------|---------------|
 | agoro oluwatimilehin | Credit scoring model (XGBoost + SHAP) |
-| david akhabue | Cash flow forecasting (LSTM) |
+| david akhabue | Cash flow forecasting (LSTM) | Backend Integration
 | lucid ohine | Backend API + dashboard |
 
 ---
