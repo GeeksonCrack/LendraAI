@@ -23,7 +23,7 @@ LendraAI is a high-fidelity, AI-powered financial platform designed to provide A
 |------|-------|------|----------------|
 | **Agoro Oluwatimilehin** | Drizzy | ML Engineer | Credit Model (XGBoost + SHAP) & Interactive Dashboard UI |
 | **Ohine Ivori** | Lucid | Backend Engineer | Robust API Infrastructure & Interswitch Integration |
-| **David Akuabue** | Code | ML Engineer | Cash Flow Forecasting Model (LSTM) |
+| **David Akhabue** | Code | ML & Backend Engineer — Cash Flow Forecasting Service (LSTM) & Backend Integration |
 
 ---
 
